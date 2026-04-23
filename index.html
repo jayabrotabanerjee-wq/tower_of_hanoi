@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tower of Hanoi Demo</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --accent: #22c55e;
+      --accent-2: #38bdf8;
+      --danger: #f97316;
+      --tower: #64748b;
+      --base: #334155;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(180deg, #020617, var(--bg));
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .app {
+      width: min(1100px, 100%);
+      display: grid;
+      gap: 20px;
+    }
+
+    .card {
+      background: rgba(17, 24, 39, 0.95);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(1.8rem, 2.5vw, 2.6rem);
+    }
+
+    p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+      align-items: end;
+    }
+
+    label {
+      display: grid;
+      gap: 8px;
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    input, button {
+      font: inherit;
+      border-radius: 12px;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      padding: 12px 14px;
+    }
+
+    input {
+      background: #0b1220;
+      color: var(--text);
+    }
+
+    .buttons {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      cursor: pointer;
+      font-weight: 700;
+      color: white;
+      transition: transform 0.15s ease, opacity 0.15s ease;
+    }
+
+    button:hover { transform: translateY(-1px); }
+    button:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+    .start { background: var(--accent); }
+    .reset { background: var(--accent-2); }
+    .step { background: var(--danger); }
+
+    .stats {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .stats span small {
+      display: block;
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    .board {
+      height: 420px;
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      align-items: end;
+      padding: 20px;
+    }
+
+    .peg {
+      position: relative;
+      height: 100%;
+      display: flex;
+      align-items: end;
+      justify-content: center;
+    }
+
+    .peg::before {
+      content: "";
+      position: absolute;
+      bottom: 36px;
+      width: 14px;
+      height: 260px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, #94a3b8, var(--tower));
+      z-index: 1;
+    }
+
+    .peg::after {
+      content: "";
+      position: absolute;
+      bottom: 20px;
+      width: min(90%, 240px);
+      height: 18px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, #475569, var(--base));
+      z-index: 1;
+    }
+
+    .stack {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column-reverse;
+      align-items: center;
+      justify-content: flex-start;
+      padding-bottom: 38px;
+      gap: 6px;
+    }
+
+    .disk {
+      height: 24px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 3px 10px rgba(0,0,0,0.2);
+      transition: width 0.2s ease;
+    }
+
+    .peg-label {
+      position: absolute;
+      bottom: 0;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+
+    code {
+      display: inline-block;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.15);
+      border-radius: 10px;
+      padding: 2px 8px;
+      color: #cbd5e1;
+    }
+
+    .notes {
+      display: grid;
+      gap: 12px;
+    }
+
+    .notes strong { color: white; }
+
+    @media (max-width: 700px) {
+      .board {
+        height: 360px;
+        gap: 8px;
+        padding: 12px;
+      }
+
+      .peg::before { height: 220px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="card">
+      <h1>Tower of Hanoi — Recursive Demo</h1>
+      <p>
+        A single-file HTML demo you can upload directly to GitHub Pages. This version highlights
+        the classic recursive solution while visually animating each move.
+      </p>
+    </section>
+
+    <section class="card">
+      <div class="controls">
+        <label>
+          Number of disks (3–8)
+          <input id="diskCount" type="number" min="3" max="8" value="5" />
+        </label>
+
+        <label>
+          Speed in ms per move
+          <input id="speed" type="number" min="50" max="2000" step="50" value="350" />
+        </label>
+
+        <div class="buttons">
+          <button class="start" id="startBtn">Start</button>
+          <button class="step" id="stepBtn">Step Once</button>
+          <button class="reset" id="resetBtn">Reset</button>
+        </div>
+      </div>
+
+      <div class="stats">
+        <span><small>Planned moves</small><span id="plannedMoves">0</span></span>
+        <span><small>Completed moves</small><span id="completedMoves">0</span></span>
+        <span><small>Status</small><span id="status">Ready</span></span>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="board">
+        <div class="peg">
+          <div class="stack" id="peg-0"></div>
+          <div class="peg-label">A</div>
+        </div>
+        <div class="peg">
+          <div class="stack" id="peg-1"></div>
+          <div class="peg-label">B</div>
+        </div>
+        <div class="peg">
+          <div class="stack" id="peg-2"></div>
+          <div class="peg-label">C</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card notes">
+      <p><strong>Recursion:</strong> the <code>solveHanoi()</code> function calls itself to break the puzzle into smaller subproblems.</p>
+      <p><strong>Iteration:</strong> rendering the disks and animating the move list both use loops to process the current state step by step.</p>
+      <p><strong>GitHub Pages:</strong> upload this file as <code>index.html</code> to your <code>jayabrotabanerjee.github.io</code> repository.</p>
+    </section>
+  </main>
+
+  <script>
+    const diskInput = document.getElementById('diskCount');
+    const speedInput = document.getElementById('speed');
+    const startBtn = document.getElementById('startBtn');
+    const stepBtn = document.getElementById('stepBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const plannedMovesEl = document.getElementById('plannedMoves');
+    const completedMovesEl = document.getElementById('completedMoves');
+    const statusEl = document.getElementById('status');
+    const pegElements = [
+      document.getElementById('peg-0'),
+      document.getElementById('peg-1'),
+      document.getElementById('peg-2')
+    ];
+
+    let pegs = [];
+    let moves = [];
+    let moveIndex = 0;
+    let isRunning = false;
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function updateStats(message = 'Ready') {
+      plannedMovesEl.textContent = moves.length;
+      completedMovesEl.textContent = moveIndex;
+      statusEl.textContent = message;
+    }
+
+    function createInitialState(diskCount) {
+      pegs = [[], [], []];
+      for (let size = diskCount; size >= 1; size--) {
+        pegs[0].push(size);
+      }
+    }
+
+    function diskColor(size, total) {
+      const hue = Math.round((size / total) * 300 + 20);
+      return `hsl(${hue} 75% 55%)`;
+    }
+
+    function render() {
+      const total = Number(diskInput.value);
+
+      // ITERATION DEMO:
+      // We loop over each peg, then loop over each disk in that peg,
+      // drawing the current puzzle state to the page.
+      pegElements.forEach((pegEl, pegIndex) => {
+        pegEl.innerHTML = '';
+
+        pegs[pegIndex].forEach(size => {
+          const disk = document.createElement('div');
+          disk.className = 'disk';
+          disk.style.width = `${60 + size * 22}px`;
+          disk.style.background = `linear-gradient(180deg, ${diskColor(size, total)}, rgba(255,255,255,0.08))`;
+          disk.title = `Disk ${size}`;
+          pegEl.appendChild(disk);
+        });
+      });
+    }
+
+    function prepareMoves(diskCount) {
+      moves = [];
+
+      // RECURSION DEMO:
+      // This function solves Tower of Hanoi by calling itself twice:
+      // 1) move n-1 disks to auxiliary peg
+      // 2) move the largest disk to target peg
+      // 3) move n-1 disks from auxiliary peg to target peg
+      function solveHanoi(n, from, to, aux) {
+        if (n === 0) return;
+        solveHanoi(n - 1, from, aux, to);
+        moves.push([from, to]);
+        solveHanoi(n - 1, aux, to, from);
+      }
+
+      solveHanoi(diskCount, 0, 2, 1);
+    }
+
+    function applyMove() {
+      if (moveIndex >= moves.length) {
+        updateStats('Complete');
+        return false;
+      }
+
+      const [from, to] = moves[moveIndex];
+      const disk = pegs[from].pop();
+      pegs[to].push(disk);
+      moveIndex += 1;
+      render();
+      updateStats(`Moved disk from ${String.fromCharCode(65 + from)} to ${String.fromCharCode(65 + to)}`);
+      return true;
+    }
+
+    async function runAnimation() {
+      if (isRunning) return;
+      isRunning = true;
+      startBtn.disabled = true;
+      stepBtn.disabled = true;
+
+      // ITERATION DEMO:
+      // We step through the precomputed list of recursive moves one by one.
+      while (moveIndex < moves.length && isRunning) {
+        applyMove();
+        await sleep(clamp(Number(speedInput.value) || 350, 50, 2000));
+      }
+
+      isRunning = false;
+      startBtn.disabled = false;
+      stepBtn.disabled = false;
+      if (moveIndex >= moves.length) updateStats('Complete');
+    }
+
+    function resetBoard() {
+      isRunning = false;
+      moveIndex = 0;
+      const diskCount = clamp(Number(diskInput.value) || 5, 3, 8);
+      diskInput.value = diskCount;
+      createInitialState(diskCount);
+      prepareMoves(diskCount);
+      render();
+      updateStats('Ready');
+    }
+
+    startBtn.addEventListener('click', runAnimation);
+    stepBtn.addEventListener('click', () => {
+      if (!isRunning) applyMove();
+    });
+    resetBtn.addEventListener('click', resetBoard);
+    diskInput.addEventListener('change', resetBoard);
+
+    resetBoard();
+  </script>
+</body>
+</html>
